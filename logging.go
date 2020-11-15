@@ -15,8 +15,8 @@ type Logger struct {
 	level  Level
 }
 
-// GetLogger ロガーを取得します.
-func GetLogger(config *Config) *Logger {
+// NewLogger ロガーを取得します.
+func NewLogger(config *Config) *Logger {
 	return &Logger{config: config}
 }
 
