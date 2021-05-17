@@ -130,7 +130,7 @@ func (l *Logger) getLogFile() *os.File {
 		//log.Println("ログファイルは既に存在します。")
 
 		// ログファイルを開く.
-		file, err := os.OpenFile(l.config.filePath+l.config.fileName+fileType, os.O_APPEND, os.ModeAppend|0644)
+		file, err := os.OpenFile(l.config.filePath+l.config.fileName+fileType, os.O_RDWR|os.O_APPEND, 0644)
 
 		if err != nil {
 			log.Fatal(err)
