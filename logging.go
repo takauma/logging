@@ -125,6 +125,14 @@ func (l *Logger) getLogFile() *os.File {
 	// ログファイル拡張子.
 	fileType := ".log"
 
+	// ファイルパスの整形.
+	if l.config.filePath[len(l.config.filePath)-1:len(l.config.filePath)] != "/" {
+		l.config.filePath += "/"
+	}
+	if l.config.fileName[0:1] == "/" {
+		l.config.filePath = l.config.filePath[0 : len(l.config.filePath)-1]
+	}
+
 	// ログファイルの存在チェック.
 	if fileExist(l.config.filePath + l.config.fileName + fileType) {
 		//log.Println("ログファイルは既に存在します。")
