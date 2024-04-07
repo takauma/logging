@@ -120,8 +120,6 @@ func (l *Logger) outFile(log string) {
 
 // getLogFile ログファイルを取得します.
 func (l *Logger) getLogFile() *os.File {
-	//log.Println("ログファイルの取得を開始します。")
-
 	// ログファイル拡張子.
 	fileType := ".log"
 
@@ -130,13 +128,11 @@ func (l *Logger) getLogFile() *os.File {
 		l.config.filePath += "/"
 	}
 	if l.config.fileName[0:1] == "/" {
-		l.config.filePath = l.config.filePath[0 : len(l.config.filePath)-1]
+		l.config.fileName = l.config.fileName[1:len(l.config.fileName)]
 	}
 
 	// ログファイルの存在チェック.
 	if fileExist(l.config.filePath + l.config.fileName + fileType) {
-		//log.Println("ログファイルは既に存在します。")
-
 		// ログファイルを開く.
 		file, err := os.OpenFile(l.config.filePath+l.config.fileName+fileType, os.O_RDWR|os.O_APPEND, 0644)
 
@@ -153,12 +149,10 @@ func (l *Logger) getLogFile() *os.File {
 
 		// 最終更新日時を取得.
 		modTime := fileInfo.ModTime()
-		//log.Println("ログファイルの最終更新日: " + modTime.Format("2006/01/02"))
 
 		//本日日付を取得.
 		nowDateTime := time.Now()
 		today := time.Date(nowDateTime.Year(), nowDateTime.Month(), nowDateTime.Day(), 0, 0, 0, 0, time.Local)
-		//log.Println("本日の日付: " + today.Format("2006/01/02"))
 
 		//ログファイルの最終更新日が本日より古い場合の処理.
 		if modTime.Before(today) {
@@ -168,8 +162,6 @@ func (l *Logger) getLogFile() *os.File {
 			err := os.Rename(l.config.filePath+l.config.fileName+fileType,
 				l.config.filePath+l.config.fileName+modTime.Format("_20060102")+fileType)
 
-			//log.Println("古いログファイルのファイル名を変更します。")
-
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -178,7 +170,6 @@ func (l *Logger) getLogFile() *os.File {
 			return fileCreate(l.config.filePath + l.config.fileName + fileType)
 		}
 
-		//log.Println("既存のログファイルの最終更新日が本日のため既存のログファイルにログを追記します。")
 		return file
 	}
 
