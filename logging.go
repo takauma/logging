@@ -62,6 +62,8 @@ func (l *Logger) createLog(message interface{}) string {
 
 	// 呼び出し元メソッド.
 	var execFunc string
+	// 行番号.
+	var line int
 	// エラーフラグ.
 	hasErr := false
 
@@ -77,7 +79,7 @@ func (l *Logger) createLog(message interface{}) string {
 		s := runtime.FuncForPC(pc).Name()
 
 		if !isNotLoggerFuncPath(s) {
-			pc, _, _, ok := runtime.Caller(i + 1)
+			pc, _, line, ok = runtime.Caller(i + 1)
 
 			if !ok {
 				hasErr = true
@@ -93,7 +95,7 @@ func (l *Logger) createLog(message interface{}) string {
 		log.Fatal("関数名取得処理で異常が発生しました。")
 	}
 
-	return fmt.Sprintf("%s %5s %s %s\n", time, levelStr, execFunc, msg)
+	return fmt.Sprintf("%s %5s %s:%d %s\n", time, levelStr, execFunc, line, msg)
 }
 
 // outConsole ログをコンソールに出力します.
