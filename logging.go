@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -23,70 +24,66 @@ func NewLogger(config *Config) *Logger {
 // Debug Debugレベルでログを出力します.
 func (l *Logger) Debug(message ...interface{}) {
 	l.level = DEBUG
-	l.processingWriteLog(message)
+	log := l.generateLogString(message)
+	l.outputLogToConsole(log)
+	l.outputLogToFile(log)
 }
 
 // Info Infoレベルでログを出力します.
 func (l *Logger) Info(message ...interface{}) {
 	l.level = INFO
-	l.processingWriteLog(message)
+	log := l.generateLogString(message)
+	l.outputLogToConsole(log)
+	l.outputLogToFile(log)
 }
 
 // Warn Warnレベルでログを出力します.
 func (l *Logger) Warn(message ...interface{}) {
 	l.level = WARN
-	l.processingWriteLog(message)
+	log := l.generateLogString(message)
+	l.outputLogToConsole(log)
+	l.outputLogToFile(log)
 }
 
 // Error Errorレベルでログを出力します.
 func (l *Logger) Error(message ...interface{}) {
 	l.level = ERROR
-	l.processingWriteLog(message)
+	log := l.generateLogString(message)
+	l.outputLogToConsole(log)
+	l.outputLogToFile(log)
 }
 
-// processingWriteLog ログ書き込み処理を行います.
-func (l *Logger) processingWriteLog(message interface{}) {
-	log := l.createLog(message)
-	l.outConsole(log)
-	l.outFile(log)
-}
-
-// getLogStr ログ出力する文字列を作成します.
-func (l *Logger) createLog(message interface{}) string {
+// generateLogString ログ出力する文字列を生成します.
+func (l *Logger) generateLogString(message interface{}) string {
 	msg := fmt.Sprintf("%v", message)
 	msg = strings.TrimPrefix(msg, "[")
 	msg = strings.TrimSuffix(msg, "]")
 
 	time := time.Now().Format("2006-01-02 15:04:05.000")
-	levelStr := getLevelStr(l.level)
+	levelStr := getLevelString(l.level)
 
-	// 呼び出し元メソッド.
-	var execFunc string
-	// 行番号.
-	var line int
+	// 自モジュール名を取得.
+	selfUnitPtr, _, _, _ := runtime.Caller(0)
+	selfPCName := runtime.FuncForPC(selfUnitPtr).Name()
+	moduleName := regexp.MustCompile(`(\.\(.+\))*[\./]generateLogString`).ReplaceAllString(selfPCName, "")
+
 	// エラーフラグ.
 	hasErr := false
 
-	// 最初に呼び出したメソッドを取得.
-	for i := 0; ; i++ {
-		pc, _, _, ok := runtime.Caller(i)
-
+	// ログ出力を行った関数名(フルパス)と行番号を取得.
+	// 少なくとも当関数とログ出力関数で2回は関数呼び出ししているので初期値は2.
+	var pcName string
+	var line int
+	for i := 2; ; i++ {
+		var up uintptr
+		var ok bool
+		up, _, line, ok = runtime.Caller(i)
 		if !ok {
 			hasErr = true
 			break
 		}
-
-		s := runtime.FuncForPC(pc).Name()
-
-		if !isNotLoggerFuncPath(s) {
-			pc, _, line, ok = runtime.Caller(i + 1)
-
-			if !ok {
-				hasErr = true
-				break
-			}
-
-			execFunc = runtime.FuncForPC(pc).Name()
+		pcName = runtime.FuncForPC(up).Name()
+		if !strings.Contains(pcName, moduleName) {
 			break
 		}
 	}
@@ -95,11 +92,16 @@ func (l *Logger) createLog(message interface{}) string {
 		log.Fatal("関数名取得処理で異常が発生しました。")
 	}
 
-	return fmt.Sprintf("%s %5s %s:%d %s\n", time, levelStr, execFunc, line, msg)
+	// レベル表示を5桁に揃える.
+	for len(levelStr) != 5 {
+		levelStr += " "
+	}
+
+	return fmt.Sprintf("%s %s %s:%d %s\n", time, levelStr, pcName, line, msg)
 }
 
-// outConsole ログをコンソールに出力します.
-func (l *Logger) outConsole(log string) {
+// outputLogToConsole ログをコンソールに出力します.
+func (l *Logger) outputLogToConsole(log string) {
 	// レベルチェック.
 	if !checkLevel(l.level, l.config.levelConsole) {
 		return
@@ -108,8 +110,8 @@ func (l *Logger) outConsole(log string) {
 	os.Stdout.WriteString(log)
 }
 
-// outFile ログをファイルに出力します.
-func (l *Logger) outFile(log string) {
+// outputLogToFile ログをファイルに出力します.
+func (l *Logger) outputLogToFile(log string) {
 	// レベルチェック.
 	if !checkLevel(l.level, l.config.levelFile) {
 		return
